@@ -32,7 +32,7 @@ export function createApp({ store, getLyrics, translate, searchSongs = async () 
     const { id, title, artist, duration } = req.query;
     if (!id || !title) return res.status(400).json({ error: 'id and title required' });
     try {
-      // 1) same track id, 2) same title + artist under any id (normalised), 3) translate once and save.
+      // 1) same track id,  2) same title + artist under any id (normalised), 3) translate once and save.
       let s = await store.getSong(id), cached = !!s;
       if (!s && artist && store.getSongByIdentity) { s = await store.getSongByIdentity(title, artist); cached = !!s; }
       if (s && s.lang === 'other' && Array.isArray(s.lines) && s.lines.length) {

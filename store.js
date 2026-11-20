@@ -9,7 +9,7 @@ export function memoryStore(file) {
       const d = JSON.parse(readFileSync(file, 'utf8'));
       for (const s of Array.isArray(d) ? d : d.songs || []) songs.set(s.track_id, s);
       for (const [k, v] of Object.entries(d.videos || {})) videos.set(k, v);
-    } catch { /* start empty */ }
+    } catch {  }
   }
   const persist = () => file && writeFileSync(file, JSON.stringify({ songs: [...songs.values()], videos: Object.fromEntries(videos) }));
   return {

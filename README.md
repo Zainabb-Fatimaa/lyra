@@ -6,13 +6,13 @@ Lyra started with a creative problem: I wanted to understand songs in Persian, T
 
 ## What it does
 
-- Searches songs and fetches timed or plain lyrics
-- Detects Arabic, Persian, Turkish, Spanish, Russian, and other Latin-script lyrics
-- Shows the original lyric and an English translation
-- Highlights the active line while YouTube playback continues
-- Allows users to adjust timing for different recordings
-- Caches translations so a song is processed only once
-- Finds matching YouTube recordings through YouTube's official API
+- Searches songs and fetches timed or plain lyrics.
+- Detects Arabic, Persian, Turkish, Spanish, Russian, and other Latin-script lyrics.
+- Shows the original lyric and an English translation.
+- Highlights the active line while YouTube playback continues.
+- Allows users to adjust timing for different recordings.
+- Caches translations so a song is processed only once.
+- Finds matching YouTube recordings through YouTube's official API.
 
 ## Engineering mindset
 

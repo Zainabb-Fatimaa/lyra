@@ -19,7 +19,7 @@ export function detect(t) {
   return 'other';
 }
 
-// Lyrics provider (adapter): swap for Musixmatch/LyricFind when licensed.
+//  Lyrics provider (adapter): swap for Musixmatch/LyricFind when licensed.
 export async function fetchLyrics(title, artist, duration) {
   const q = new URLSearchParams({ track_name: title, artist_name: artist, duration });
   let r = await fetch('https://lrclib.net/api/get?' + q, { headers: { 'User-Agent': 'Lyra/1.0' } });
