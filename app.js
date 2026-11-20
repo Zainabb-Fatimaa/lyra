@@ -5,14 +5,14 @@ import { songKey } from './songkey.js';
 
 // Everything external is injected, so tests run without Spotify, Postgres or an LLM.
 export function createApp({ store, getLyrics, translate, searchSongs = async () => [], findVideo = async () => null, buildsPerHour = 30 }) {
-  async function build({ id, title, artist, duration }) {
+  async function build({ id, title, artist, duration, replace = false }) {
     const { lines, synced } = await getLyrics(title, artist, duration);
     const lang = detect(lines.map(l => l.orig).join(' '));
     // No lyrics found: answer without saving, so the song is looked up again next time instead of being cached as empty.
     if (!lines.length) return { track_id: id, title, artist, lang, synced: 0, lines: [] };
     const tr = lang === 'other' ? lines.map(l => ({ en: l.orig, note: '' })) : await translate(lines, lang);
     if (tr.length !== lines.length) throw new Error('Translation line count mismatch');
-    await store.saveSong({ track_id: id, title, artist, lang, synced, lines: lines.map((l, n) => ({ start_ms: l.start_ms, orig: l.orig, en: tr[n].en, note: tr[n].note })) });
+    await store.saveSong({ track_id: id, title, artist, lang, synced, lines: lines.map((l, n) => ({ start_ms: l.start_ms, orig: l.orig, en: tr[n].en, note: tr[n].note })) }, replace);
     return null;
   }
 
@@ -43,7 +43,7 @@ export function createApp({ store, getLyrics, translate, searchSongs = async () 
         const key = songKey(title, artist || '');
         if (!inflight.has(key)) {
           if (!allow(req.ip)) return res.status(429).json({ error: 'Too many new songs from your connection. Try again in a while.' });
-          inflight.set(key, build({ id, title, artist: artist || '', duration }).finally(() => inflight.delete(key)));
+          inflight.set(key, build({ id, title, artist: artist || '', duration, replace: cached === false }).finally(() => inflight.delete(key)));
         }
         const unsaved = await inflight.get(key);
         s = unsaved || await store.getSong(id) || (artist && store.getSongByIdentity ? await store.getSongByIdentity(title, artist) : null);

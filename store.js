@@ -19,7 +19,7 @@ export function memoryStore(file) {
       const same = [...songs.values()].filter(s => songKey(s.title, s.artist) === wanted);
       return same.find(s => s.synced) || same[0] || null; // prefer a version that has timings
     },
-    async saveSong(s) { if (!songs.has(s.track_id)) { songs.set(s.track_id, s); persist(); } },
+    async saveSong(s, replace = false) { if (replace || !songs.has(s.track_id)) { songs.set(s.track_id, s); persist(); } },
     async getVideo(id) { return videos.get(id) || null; },
     async saveVideo(id, v) { videos.set(id, v); persist(); },
   };
@@ -52,12 +52,16 @@ export function pgStore(pool) {
       s.lines = (await pool.query('SELECT start_ms,orig,en,note FROM lines WHERE track_id=$1 ORDER BY n', [s.track_id])).rows;
       return s;
     },
-    async saveSong(s) {
+    async saveSong(s, replace = false) {
       const c = await pool.connect();
       try {
         await c.query('BEGIN');
-        const r = await c.query('INSERT INTO songs(track_id,title,artist,lang,synced,song_key) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING', [s.track_id, s.title, s.artist, s.lang, s.synced, songKey(s.title, s.artist || '')]);
+        const r = replace
+          ? await c.query(`INSERT INTO songs(track_id,title,artist,lang,synced,song_key) VALUES($1,$2,$3,$4,$5,$6)
+            ON CONFLICT (track_id) DO UPDATE SET title=EXCLUDED.title,artist=EXCLUDED.artist,lang=EXCLUDED.lang,synced=EXCLUDED.synced,song_key=EXCLUDED.song_key`, [s.track_id, s.title, s.artist, s.lang, s.synced, songKey(s.title, s.artist || '')])
+          : await c.query('INSERT INTO songs(track_id,title,artist,lang,synced,song_key) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING', [s.track_id, s.title, s.artist, s.lang, s.synced, songKey(s.title, s.artist || '')]);
         if (r.rowCount) {
+          if (replace) await c.query('DELETE FROM lines WHERE track_id=$1', [s.track_id]);
           await c.query(`INSERT INTO lines(track_id,n,start_ms,orig,en,note) SELECT $1,n,st,o,e,nt FROM unnest($2::int[],$3::int[],$4::text[],$5::text[],$6::text[]) AS t(n,st,o,e,nt)`,
             [s.track_id, s.lines.map((_, i) => i), s.lines.map(l => l.start_ms), s.lines.map(l => l.orig), s.lines.map(l => l.en), s.lines.map(l => l.note)]);
         }

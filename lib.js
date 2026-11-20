@@ -9,11 +9,14 @@ export function parseLrc(text) {
 
 export function detect(t) {
   if (/[\u0900-\u097F]/.test(t)) return 'hi';
+  if (/[\u0400-\u04FF]/.test(t)) return 'ru';
   if (/[\u0600-\u06FF]/.test(t)) {
     if (/[\u0679\u0688\u0691\u06BA\u06BE\u06C1\u06C3\u06D2]/.test(t)) return 'ur'; // letters only Urdu uses
     return /[\u067E\u0686\u0698\u06AF\u06CC\u06A9]/.test(t) ? 'fa' : 'ar';
   }
-  return /[ğşıİĞŞ]/.test(t) ? 'tr' : 'other';
+  if (/[ğşıİĞŞ]/.test(t)) return 'tr';
+  if (/[ñ¿¡áéíóúü]/i.test(t) || /\b(hola|buenos|buenas|amor|corazon|corazón|cancion|canción|quiero|tienes|somos|estoy|eres|porque|cuando|siempre|nunca)\b/i.test(t)) return 'es';
+  return 'other';
 }
 
 // Lyrics provider (adapter): swap for Musixmatch/LyricFind when licensed.
@@ -39,7 +42,7 @@ export async function fetchLyrics(title, artist, duration) {
 }
 
 // Translation engine (strategy): your local NLLB model, served by nllb_server.py.
-export const NLLB_CODES = { ar: 'arb_Arab', fa: 'pes_Arab', ur: 'urd_Arab', hi: 'hin_Deva', tr: 'tur_Latn' };
+export const NLLB_CODES = { ar: 'arb_Arab', fa: 'pes_Arab', ur: 'urd_Arab', hi: 'hin_Deva', tr: 'tur_Latn', es: 'spa_Latn', ru: 'rus_Cyrl' };
 
 export function nllbTranslator(url = process.env.NLLB_URL || 'http://127.0.0.1:8001') {
   return async (lines, lang) => {
@@ -60,7 +63,7 @@ export function nllbTranslator(url = process.env.NLLB_URL || 'http://127.0.0.1:8
 }
 
 // Fallback translator (strategy): Ollama also writes idiom notes.
-const NAMES = { ar: 'Arabic', fa: 'Persian', ur: 'Urdu', tr: 'Turkish', hi: 'Hindi' };
+const NAMES = { ar: 'Arabic', fa: 'Persian', ur: 'Urdu', tr: 'Turkish', hi: 'Hindi', es: 'Spanish', ru: 'Russian' };
 const SYSTEM = lang => `You translate ${NAMES[lang]} song lyrics into natural, poetic English. Keep imagery and emotion; never translate word for word. The input is a JSON array of lines. Reply with JSON only: {"lines":[{"en":"translation","note":"short idiom or cultural note, or empty string"}]} with exactly one object per input line, in the same order, even for repeated or very short lines. Never merge or split lines.`;
 
 function readLines(content, n, who) {
